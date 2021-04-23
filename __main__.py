@@ -61,4 +61,41 @@ class ActionListener:
         return self.key_down[key_id]
     def is_button_up(self, button_id): return button_id in self.button_up
     def is_key_up(self, key_id): return key_id in self.key_up
-
+class Line:
+    def __init__(self, geometry, color):
+        self.geometry = geometry
+        self.color = color
+    def draw(self, window: Window, plus_x: int = 0, plus_y: int = 0):
+        geo_last = None
+        for geo in self.geometry:
+            if geo_last:
+                pygame.draw.line(window.screen, self.color, [geo[0] + plus_x, geo[1] + plus_y], [geo_last[0] + plus_x, geo_last[1] + plus_y])
+            geo_last = geo
+class Rectangle:
+    def __init__(self, geometry, color):
+        self.geometry = geometry
+        self.color = color
+    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+        geo = self.geometry.copy()
+        geo[0] += plus_x; geo[1] += plus_y
+        pygame.draw.rect(window.screen, self.color, geo)
+class Ellipse:
+    def __init__(self, geometry, color):
+        self.geometry = geometry
+        self.color = color
+    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+        geo = self.geometry.copy()
+        geo[0] += plus_x; geo[1] += plus_y
+        pygame.draw.ellipse(window.screen, self.color, geo)
+class Polygon:
+    def __init__(self, geometry, color):
+        self.geometry = geometry
+        self.color = color
+    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+        geo = self.geometry.copy()
+        for point_i in range(len(geo)):
+            point = geo[point_i]
+            point[0] += plus_x; point[1] += plus_y
+            geo[point_i] = point
+        
+        pygame.draw.polygon(window.screen, self.color, geo)
