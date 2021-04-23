@@ -1,5 +1,4 @@
 import pygame
-import string
 
 from time import time as now
 
@@ -14,6 +13,25 @@ class Window:
         self.clock = pygame.time.Clock()
         self.images = {}; self.fonts = {}
         self.actions = ActionListener()
+    def is_button_down(self, button_id): return self.actions.is_button_down(button_id)
+    def is_button_up(self, button_id): return self.actions.is_button_up(button_id)
+    def is_key_down(self, key_id): return self.actions.is_key_down(key_id)
+    def is_key_up(self, key_id): return self.actions.is_key_up(key_id)
+    def load_image(self, path):
+        if path in self.images: return self.images[path]
+        else: self.images[path] = pygame.image.load(path); return self.load_image(path)
+    def load_font(self, font_name, font_size):
+        if font_name in self.fonts:
+            if font_size in self.fonts[font_name]: return self.fonts[font_name][font_size]
+        else: self.fonts[font_name] = {}
+        self.fonts[font_name][font_size] = pygame.font.SysFont(font_name, font_size)
+        return self.load_font(font_name, font_size)
+    def fill(self, color):
+        self.root.fill(color)
+    def loop(self, fps):
+        self.clock.tick(fps)
+        pygame.display.flip()
+        self.actions.loop()
 class ActionListener:
     def __init__(self):
         self.button_down    = {}; self.button_up      = []
