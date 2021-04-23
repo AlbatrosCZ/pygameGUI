@@ -5,6 +5,15 @@ from time import time as now
 pygame.init()
 pygame.mixer.init()
 
+def convert(screen, image, x, y, opacity = 255, angle = 0):
+    rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(center = image.get_rect(topleft = [x, y]).center)
+    image, [x, y] = rotated_image, new_rect.topleft
+    temp = pygame.Surface((image.get_width(), image.get_height())).convert()
+    temp.blit(screen, (-x, -y))
+    temp.blit(image, (0, 0))
+    temp.set_alpha(opacity)        
+    return temp, x, y
 class Window:
     def __init__(self, width: int, height: int, fullscreen: bool = False):
         if fullscreen: self.root = pygame.display.set_mode([width, height], pygame.FULLSCREEN)
@@ -99,3 +108,40 @@ class Polygon:
             geo[point_i] = point
         
         pygame.draw.polygon(window.screen, self.color, geo)
+class Image:
+    def __init__(self, path, geometry, alpha = 255, angle = 0):
+        self.path = path
+        self.geometry = geometry
+        self.alpha = alpha
+        self.angle = angle
+    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+        img = window.load_image(self.path)
+        geo = self.geometry.copy()
+        geo[0] += plus_x; geo[1] += plus_y
+        try:
+            img = pygame.transform.scale(img, (geo[2], geo[3]))
+        except:
+            pass
+        img, x, y = convert(window.screen, img, geo[0], geo[1], self.alpha, self.angle)
+        window.screen.blit(img, [x, y])
+class Text:
+    def __init__(self, text, geometry, alpha = 255, angle = 0, color = (0, 0, 0), font = "Arial"):
+        self.text = text
+        self.geometry = geometry
+        self.alpha = alpha
+        self.angle = angle
+        self.color = color
+        self.font = font 
+    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+        geo = self.geometry.copy()
+        geo[0] += plus_x; geo[1] += plus_y
+        font = window.load_font(self.font, geo[2])
+        text = font.render(self.text, True, self.color)
+        text, x, y = convert(window.screen, text, geo[0], geo[1], self.alpha, self.angle)
+        window.screen.blit(text, (x, y))
+    def get_size(self, window:Window):
+        geo = self.geometry.copy()
+        font = window.load_font(self.font, geo[2])
+        text = font.render(self.text, True, self.color)
+        text, x, y = convert(window.screen, text, geo[0], geo[1], self.alpha, self.angle)
+        return [text.get_width(), text.get_height()]
