@@ -5,6 +5,16 @@ from time import time as now
 pygame.init()
 pygame.mixer.init()
 
+def __pass(): pass
+def use(args, names, default):
+    for name in names:
+        if name in args:
+            return name
+    return default
+def mouse_on(x, y, width, height):
+    mouse = pygame.mouse.get_pos()
+    if x < mouse[0] < x + width and y < mouse[1] < y + height: return True
+    else: return False
 def convert(screen, image, x, y, opacity = 255, angle = 0):
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center = image.get_rect(topleft = [x, y]).center)
@@ -74,17 +84,16 @@ class Line:
     def __init__(self, geometry, color):
         self.geometry = geometry
         self.color = color
-    def draw(self, window: Window, plus_x: int = 0, plus_y: int = 0):
+    def draw(self, window: Window, plus_x:int = 0, plus_y:int = 0):
         geo_last = None
         for geo in self.geometry:
-            if geo_last:
-                pygame.draw.line(window.screen, self.color, [geo[0] + plus_x, geo[1] + plus_y], [geo_last[0] + plus_x, geo_last[1] + plus_y])
+            if geo_last: pygame.draw.line(window.screen, self.color, [geo[0] + plus_x, geo[1] + plus_y], [geo_last[0] + plus_x, geo_last[1] + plus_y])
             geo_last = geo
 class Rectangle:
     def __init__(self, geometry, color):
         self.geometry = geometry
         self.color = color
-    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+    def draw(self, window:Window, plus_x:int = 0, plus_y:int = 0):
         geo = self.geometry.copy()
         geo[0] += plus_x; geo[1] += plus_y
         pygame.draw.rect(window.screen, self.color, geo)
@@ -92,7 +101,7 @@ class Ellipse:
     def __init__(self, geometry, color):
         self.geometry = geometry
         self.color = color
-    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+    def draw(self, window:Window, plus_x:int = 0, plus_y:int = 0):
         geo = self.geometry.copy()
         geo[0] += plus_x; geo[1] += plus_y
         pygame.draw.ellipse(window.screen, self.color, geo)
@@ -100,7 +109,7 @@ class Polygon:
     def __init__(self, geometry, color):
         self.geometry = geometry
         self.color = color
-    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+    def draw(self, window:Window, plus_x:int = 0, plus_y:int = 0):
         geo = self.geometry.copy()
         for point_i in range(len(geo)):
             point = geo[point_i]
@@ -114,14 +123,12 @@ class Image:
         self.geometry = geometry
         self.alpha = alpha
         self.angle = angle
-    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+    def draw(self, window:Window, plus_x:int = 0, plus_y:int = 0):
         img = window.load_image(self.path)
         geo = self.geometry.copy()
         geo[0] += plus_x; geo[1] += plus_y
-        try:
-            img = pygame.transform.scale(img, (geo[2], geo[3]))
-        except:
-            pass
+        try: img = pygame.transform.scale(img, (geo[2], geo[3]))
+        except: pass
         img, x, y = convert(window.screen, img, geo[0], geo[1], self.alpha, self.angle)
         window.screen.blit(img, [x, y])
 class Text:
@@ -132,7 +139,7 @@ class Text:
         self.angle = angle
         self.color = color
         self.font = font 
-    def draw(self, window:Window, plus_x = 0, plus_y = 0):
+    def draw(self, window:Window, plus_x:int = 0, plus_y:int = 0):
         geo = self.geometry.copy()
         geo[0] += plus_x; geo[1] += plus_y
         font = window.load_font(self.font, geo[2])
@@ -145,3 +152,60 @@ class Text:
         text = font.render(self.text, True, self.color)
         text, x, y = convert(window.screen, text, geo[0], geo[1], self.alpha, self.angle)
         return [text.get_width(), text.get_height()]
+class ImageButton:
+    def __init__(self, geometry, path:str, text:str, font:str= "Arial", fg:tuple = (0, 0, 0), function =__pass, **args):
+        args["None"] = None
+        self.geometry = geometry
+        self.text = text
+        self.font = font
+        self.color = {"fg_def": fg, "fg_hover": use(args, ["fg_hover"], "None"), "fg_activate": use(args, ["fg_activate"], None)}
+        self.path = {"def":path, "hover": use(args, ["path_hover"], "None"), "activate": use(args, ["path_activate"], "None")}
+        self.function = function
+        self.__actual = "def"
+    def draw(self, window: Window, plus_x:int = 0, plus_y:int = 0):
+        geo = self.geometry
+        if mouse_on(geo[0] + plus_x, geo[1] + plus_y, geo[2], geo[3]):
+            self.__update(window, "hover")
+            if window.is_button_down(1):
+                self.__update(window, "activate")
+            elif window.is_button_up(1):
+                self.function()
+        else:
+            self.__update(window, "def")
+        window.blit(self.__bg, [self.geometry[0] + plus_x, self.geometry[1] + plus_y])
+    def __update(self, window, use):
+        if self.path[use] == None:
+            self.__image = window.load_image(self.path["def"])
+        else:
+            self.__image = window.load_image(self.path[use])
+        self.__image = pygame.transform.scale(self.__image, (self.geometry[2], self.geometry[3]))
+        self.__bg = pygame.Surface(self.geometry[2], self.geometry[3])
+        self.__bg.blit(self.__image, [0, 0])
+        if self.color[f"fg_{use}"] == None:
+            self.__fg = window.load_font(self.font, self.geometry[3]).render(self.text, True, self.color[f"fg_def"])
+        else:
+            self.__fg = window.load_font(self.font, self.geometry[3]).render(self.text, True, self.color[f"fg_{use}"])
+        self.__bg.blit(self.__fg, [0, 0])
+class ButtonImage:
+    def __init__(self, geometry, path:str, function = __pass, **args):
+        self.geometry = geometry
+        args["None"] = None
+        self.path = {"path":path, "hover":use(args, ["path_hover"], "None"), "activate":use(args, ["path_activate"], "None")}
+        self.__image = Image(self.path["path"], self.geometry)
+        self.function = function
+    def draw(self, window: Window, plus_x:int = 0, plus_y:int = 0):
+        geo = self.geometry
+        if mouse_on(geo[0] + plus_x, geo[1] + plus_y, geo[2], geo[3]):
+            self.__update("hover")
+            if window.is_button_down(1):
+                self.__update("activate")
+            elif window.is_button_up(1):
+                self.function()
+        else:
+            self.__update("path")
+        self.__image.draw(window, plus_x, plus_y)
+    def __update(self, use):
+        if self.path[use] == None:
+            self.__image.path = self.path["path"]
+        else:
+            self.__image.path = self.path[use]
