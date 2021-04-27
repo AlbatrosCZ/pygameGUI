@@ -251,10 +251,9 @@ class Polygon:
 *plus_y = Integer"""
         geo = self.geometry.copy()
         for point_i in range(len(geo)):
-            point = geo[point_i]
+            point = geo[point_i].copy()
             point[0] += plus_x; point[1] += plus_y
             geo[point_i] = point
-        
         pygame.draw.polygon(window.root, self.color, geo)
 class Image:
     """Image class draw image on window
