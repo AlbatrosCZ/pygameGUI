@@ -330,7 +330,7 @@ class Text:
         font = pygame.font.SysFont(self.font, geo[2])
         text = font.render(self.text, True, self.color)
 
-        text, x, y = convert(pygame.Surface([0, 0]), text, geo[0], geo[1], self.alpha, self.angle)
+        text, x, y = convert(pygame.Surface([0, 0], pygame.SRCALPHA, 32), text, geo[0], geo[1], self.alpha, self.angle)
         return [text.get_width(), text.get_height()]
 class ButtonImage:
     """Button Image class draw button on window
@@ -423,7 +423,7 @@ class DefaultButton:
                 self.function()
         else:
             use = "def"
-        bg = pygame.Surface((self.geometry[2], self.geometry[3]))
+        bg = pygame.Surface((self.geometry[2], self.geometry[3]), pygame.SRCALPHA, 32)
         if self.color[f"fg_{use}"] == None:
             bg.fill(self.color["fg_def"])
         else:
@@ -452,4 +452,36 @@ class DefaultButton:
         bg.blit(text, [width, height])
         window.root.blit(bg, [geo[0] + plus_x, geo[1] + plus_y])
         self.text_size = [text.get_width(), text.get_height()]
+class OnOffSwitch:
+    def __init__(self, geometry, border = (0, 0, 0), bg = (255, 255, 255), **args):
+        self.geometry = geometry
+        self.colors = { "border_def": border, "border_hover": use(args, ["border_hover"], None), "border_activate": use(args, ["border_hover"], None),
+                        "bg_def": bg, "bg_hover": use(args, ["bg_hover"], None), "bg_activate": use(args, ["bg_activate"], (0, 0, 255)),
+                        "I": use(args, ["i_color"], (0, 255, 0)), "O": use(args, ["o_color"], (255, 0, 0))}
+        self.state = False
+        self.__surface = pygame.Surface((51, 31), pygame.SRCALPHA, 32)
+    def draw(self, window: Window, plus_x:int = 0, plus_y:int = 0):
+        font = window.load_font("PalatinoLinoType", 25)
+        I = font.render("I", True, self.colors["I"]); O = font.render("O", True, self.colors["O"])
+        geo = self.geometry.copy()
+        self.__surface.convert_alpha()
+        self.__surface.fill(self.colors["border_def"])
+        if not self.state:
+            pygame.draw.rect(self.__surface, self.colors["bg_def"], [1, 1, 24, 29])
+            if self.colors["bg_activate"] != None: pygame.draw.rect(self.__surface, self.colors["bg_activate"], [26, 1, 24, 29])
+        else:
+            if self.colors["bg_activate"] != None: pygame.draw.rect(self.__surface, self.colors["bg_activate"], [1, 1, 24, 29])
+            pygame.draw.rect(self.__surface, self.colors["bg_def"], [26, 1, 24, 29])
+        if mouse_on(geo[0] + 1, geo[1] + 1, 24, 29):
+            if self.colors["bg_hover"]: pygame.draw.rect(self.__surface, self.colors["bg_hover"], [1, 1, 24, 29])
+            if window.is_button_down(1): self.state = True
+        elif mouse_on(geo[0] + 26, geo[1] + 1, 24, 29):
+            if self.colors["bg_hover"]: pygame.draw.rect(self.__surface, self.colors["bg_hover"], [26, 1, 24, 29])
+            if window.is_button_down(1): self.state = False
+        self.__surface.blit(I, [8, 5]); self.__surface.blit(O, [28, 5])
+        self.__surface = convert(window.root, self.__surface, geo[0] + plus_x, geo[1] + plus_y)[0]
+        window.root.blit(self.__surface, self.geometry)        
+        
+
+        
 
